@@ -5,6 +5,20 @@ import os
 import time_utils
 from owslib.wms import WebMapService
 
+# Komakallio location in EPSG:3067 coordinates
+KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
+
+# Radar image scale
+METERS_PER_PIXEL = 250.0
+
+# Bounding box size in meters
+BOUNDING_BOX_SIZE = 150000.0
+BOUNDING_BOX = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
+                KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
+
+# Image size in pixels
+IMAGE_SIZE = 2 * (int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL),)
+
 
 def main():
     # Try to read API key from config file
@@ -27,12 +41,10 @@ def main():
     # Fetch radar image
     base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms'
     wms = WebMapService(base_url, version='1.3.0')
-    rain_rate_layer = wms['suomi_rr_eureffin']
-    bounding_box = (-118331.366, 6335621.167, 875567.732, 7907751.537)
-    image_data = wms.getmap(layers=[rain_rate_layer.title],
+    image_data = wms.getmap(layers=['suomi_rr_eureffin'],
                             srs='EPSG:3067',
-                            bbox=bounding_box,
-                            size=(994, 1572),
+                            bbox=BOUNDING_BOX,
+                            size=IMAGE_SIZE,
                             time=radar_time_string,
                             styles=['Radar rr'],
                             #styles=['raster'],
