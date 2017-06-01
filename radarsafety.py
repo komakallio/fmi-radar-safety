@@ -5,6 +5,8 @@ import os
 import urllib.parse
 import urllib.request
 import time_utils
+import io
+import PIL.Image
 
 # Komakallio location in EPSG:3067 coordinates
 KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
@@ -64,9 +66,8 @@ def main():
 
     complete_url = base_url + urllib.parse.urlencode(wms_params)
     with urllib.request.urlopen(complete_url) as response:
-        with open('radar.png', 'wb') as outfile:
-            outfile.write(response.read())
-
+        image = PIL.Image.open(io.BytesIO(response.read()))
+    image.save('radar.png')
 
 if __name__ == '__main__':
     main()
