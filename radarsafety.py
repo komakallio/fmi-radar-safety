@@ -32,10 +32,10 @@ def main():
     image_data = wms.getmap(layers=[rain_rate_layer.title],
                             srs='EPSG:3067',
                             bbox=bounding_box,
-                            size=(1987, 3144),
+                            size=(994, 1572),
                             time=radar_time_string,
                             styles=['Radar rr'],
-                            #styles=['Raster'],
+                            #styles=['raster'],
                             format='image/png')
     with open('radar.png', 'wb') as outfile:
         outfile.write(image_data.read())
