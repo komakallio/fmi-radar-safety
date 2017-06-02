@@ -39,17 +39,32 @@ def main():
     bounding_box = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
                     KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
 
-    # Image size in pixels
-    image_size = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
+    # Image edge length in pixels
+    image_edge_length = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
     # Determine latest radar image time
     latest_radar_time = time_utils.current_radar_time(offset=-5)
-    radar_time_string = time_utils.datetime_to_wms_string(latest_radar_time)
     timestamp = int(1000 * time.mktime(latest_radar_time.timetuple()))
-    print('Fetching radar image for {}'.format(radar_time_string))
     print('Timestamp: {}'.format(timestamp))
 
     # Fetch radar image
+    image = fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
+    image.save('latest_rain_intensity.png')
+
+    # Calculate maximum rain intensities
+    rain_intensity = np.array(image) / 100.0
+    max_intensity = rain_intensity.max()
+    print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
+
+    for radius_km in [50, 30, 10, 3, 1]:
+        radius_m = 1000 * radius_km
+        max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
+        print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+
+
+def fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length):
+    radar_time_string = time_utils.datetime_to_wms_string(latest_radar_time)
+    print('Fetching radar image for {}'.format(radar_time_string))
     base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms?'
     wms_params = {
         'service': 'WMS',
@@ -59,25 +74,15 @@ def main():
         'crs': 'EPSG:3067',
         'bbox': combine_tuple_to_string(bounding_box),
         'styles': 'raster',
-        'width': image_size,
-        'height': image_size,
+        'width': image_edge_length,
+        'height': image_edge_length,
         'format': 'image/png',
         'time': radar_time_string
     }
-
     complete_url = base_url + urllib.parse.urlencode(wms_params)
     with urllib.request.urlopen(complete_url) as response:
         image = PIL.Image.open(io.BytesIO(response.read()))
-    image.save('latest_rain_intensity.png')
-
-    rain_intensity = np.array(image) / 100.0
-    max_intensity = rain_intensity.max()
-    print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
-
-    for radius_km in [50, 30, 10, 3, 1]:
-        radius_m = 1000 * radius_km
-        max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
-        print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+    return image
 
 
 def combine_tuple_to_string(tuple_object):
