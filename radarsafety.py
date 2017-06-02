@@ -43,6 +43,12 @@ def main():
 
     # Fetch radar image
     image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
+
+    # Check if image returned by server is valid
+    if image.mode is not 'I':
+        print('Image not available!')
+        return
+
     image.save('latest_rain_intensity.png')
 
     # Calculate maximum rain inside bounding box
