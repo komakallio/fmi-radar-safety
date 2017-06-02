@@ -19,26 +19,8 @@ KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
 # Radar image scale
 METERS_PER_PIXEL = 1000.0
 
-# Bounding box size in meters
+# Bounding box edge length in meters
 BOUNDING_BOX_SIZE = 300000.0
-BOUNDING_BOX = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
-                KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
-
-# Image size in pixels
-IMAGE_SIZE = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
-
-
-def combine_tuple_to_string(tuple_object):
-    output_string = ''
-    for item in tuple_object:
-        output_string += str(item) + ','
-    return output_string[:-1]
-
-
-def get_circle_mask(center_x, center_y, radius, grid_edge_length):
-    y, x = np.ogrid[-center_y:grid_edge_length - center_y, -center_x:grid_edge_length - center_x]
-    mask = x * x + y * y <= radius * radius
-    return mask
 
 
 def main():
@@ -53,6 +35,12 @@ def main():
     except KeyError:
         print('API key not found in config!')
         return
+
+    bounding_box = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
+                    KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
+
+    # Image size in pixels
+    image_size = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
     # Determine latest radar image time
     latest_radar_time = time_utils.current_radar_time(offset=-5)
@@ -69,10 +57,10 @@ def main():
         'request': 'GetMap',
         'layers': 'suomi_rr_eureffin',
         'crs': 'EPSG:3067',
-        'bbox': combine_tuple_to_string(BOUNDING_BOX),
+        'bbox': combine_tuple_to_string(bounding_box),
         'styles': 'raster',
-        'width': IMAGE_SIZE,
-        'height': IMAGE_SIZE,
+        'width': image_size,
+        'height': image_size,
         'format': 'image/png',
         'time': radar_time_string
     }
@@ -85,6 +73,30 @@ def main():
     rain_intensity = np.array(image) / 100.0
     max_intensity = rain_intensity.max()
     print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
+
+    for radius_km in [50, 30, 10, 3]:
+        radius_m = 1000 * radius_km
+        max_intensity_inside_circle = get_max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
+        print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+
+
+def combine_tuple_to_string(tuple_object):
+    output_string = ''
+    for item in tuple_object:
+        output_string += str(item) + ','
+    return output_string[:-1]
+
+
+def get_circle_mask(center_x, center_y, radius, grid_edge_length):
+    y, x = np.ogrid[-center_y:grid_edge_length - center_y, -center_x:grid_edge_length - center_x]
+    mask = x * x + y * y <= radius * radius
+    return mask
+
+
+def get_max_inside_circle(image, radius_meters, meters_per_pixel):
+    mask = get_circle_mask(image.shape[0] // 2, image.shape[1] // 2, radius_meters / meters_per_pixel, image.shape[0])
+    max_intensity = image[mask].max()
+    return max_intensity
 
 
 if __name__ == '__main__':
