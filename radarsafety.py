@@ -87,7 +87,7 @@ def report_to_api(api_data, iso_time_string):
         'Data': api_data
     }
     try:
-        report_response = requests.post('http://localhost:9001/api/radar', json=json_data)
+        report_response = requests.post('http://localhost:9001/api', json=json_data)
         print('Komakallio API responded with status {}'.format(report_response.status_code))
     except requests.exceptions.ConnectionError:
         raise ConnectionError('Could not establish connection to Komakallio API!')
