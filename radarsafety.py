@@ -26,7 +26,7 @@ BOUNDING_BOX = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3
 IMAGE_SIZE = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
 
-def tuple_to_url_string(tuple_object):
+def combine_tuple_to_string(tuple_object):
     output_string = ''
     for item in tuple_object:
         output_string += str(item) + ','
@@ -61,7 +61,7 @@ def main():
         'request': 'GetMap',
         'layers': 'suomi_rr_eureffin',
         'crs': 'EPSG:3067',
-        'bbox': tuple_to_url_string(BOUNDING_BOX),
+        'bbox': combine_tuple_to_string(BOUNDING_BOX),
         'styles': 'raster',
         'width': IMAGE_SIZE,
         'height': IMAGE_SIZE,
