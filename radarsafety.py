@@ -8,11 +8,12 @@ import time_utils
 import io
 import PIL.Image
 
+
 # Komakallio location in EPSG:3067 coordinates
 KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
 
 # Radar image scale
-METERS_PER_PIXEL = 250.0
+METERS_PER_PIXEL = 1000.0
 
 # Bounding box size in meters
 BOUNDING_BOX_SIZE = 300000.0
