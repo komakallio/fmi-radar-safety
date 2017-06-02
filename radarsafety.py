@@ -2,6 +2,9 @@
 
 import configparser
 import os
+import time
+import calendar
+import requests
 
 import numpy as np
 
@@ -39,7 +42,11 @@ def main():
     image_edge_length = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
     # Determine latest radar image time
-    latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
+    try:
+        latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
+    except IndexError:
+        print('Radar observation time information not available!')
+        return
 
     # Fetch radar image
     image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
@@ -57,10 +64,38 @@ def main():
     print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
     # Calculate maximum rain intensity inside circles of different radii
+    api_data = {}
     for radius_km in [50, 30, 10, 3, 1]:
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
         print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+        api_data['{}km'.format(radius_km)] = max_intensity_inside_circle
+
+    # Report data to Komakallio API
+    try:
+        report_to_api(api_data, latest_radar_time)
+    except ConnectionError as e:
+        print(e)
+        return
+
+
+def report_to_api(api_data, iso_time_string):
+    timestamp = iso_string_to_timestamp(iso_time_string)
+    json_data = {
+        'Type': 'Radar',
+        'Timestamp': timestamp,
+        'Data': api_data
+    }
+    try:
+        report_response = requests.post('http://localhost:9001/api/radar', json=json_data)
+        print('Komakallio API responded with status {}'.format(report_response.status_code))
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError('Could not establish connection to Komakallio API!')
+
+
+def iso_string_to_timestamp(iso_string):
+    timestamp = 1000 * calendar.timegm(time.strptime(iso_string, '%Y-%m-%dT%H:%M:%SZ'))
+    return timestamp
 
 
 def circle_mask(center_x, center_y, radius, grid_edge_length):
