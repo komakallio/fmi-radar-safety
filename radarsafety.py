@@ -5,8 +5,10 @@ import os
 import urllib.parse
 import urllib.request
 import time_utils
+import time
 import io
 import PIL.Image
+import numpy as np
 
 
 # Komakallio location in EPSG:3067 coordinates
@@ -47,7 +49,9 @@ def main():
     # Determine latest radar image time
     latest_radar_time = time_utils.current_radar_time(offset=-5)
     radar_time_string = time_utils.datetime_to_wms_string(latest_radar_time)
+    timestamp = int(1000 * time.mktime(latest_radar_time.timetuple()))
     print('Fetching radar image for {}'.format(radar_time_string))
+    print('Timestamp: {}'.format(timestamp))
 
     # Fetch radar image
     base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms?'
@@ -58,7 +62,7 @@ def main():
         'layers': 'suomi_rr_eureffin',
         'crs': 'EPSG:3067',
         'bbox': tuple_to_url_string(BOUNDING_BOX),
-        'styles': 'Radar rr',
+        'styles': 'raster',
         'width': IMAGE_SIZE,
         'height': IMAGE_SIZE,
         'format': 'image/png',
@@ -68,7 +72,12 @@ def main():
     complete_url = base_url + urllib.parse.urlencode(wms_params)
     with urllib.request.urlopen(complete_url) as response:
         image = PIL.Image.open(io.BytesIO(response.read()))
-    image.save('radar.png')
+    image.save('latest_rain_intensity.png')
+
+    rain_intensity = np.array(image) / 100.0
+    max_intensity = rain_intensity.max()
+    print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
+
 
 if __name__ == '__main__':
     main()

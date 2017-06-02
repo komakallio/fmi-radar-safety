@@ -123,5 +123,5 @@ ENV/
 # Configuration file. Default values found in config.ini.example
 config.ini
 
-# Radar output image file
-radar.png
+# Radar output image files
+*.png
