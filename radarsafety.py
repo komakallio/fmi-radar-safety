@@ -31,6 +31,7 @@ def main():
         print('API key not found in config!')
         return
 
+    # Bounding box corner coordinates in EPSG:3067
     bounding_box = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
                     KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
 
@@ -44,11 +45,12 @@ def main():
     image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
     image.save('latest_rain_intensity.png')
 
-    # Calculate maximum rain intensities
+    # Calculate maximum rain inside bounding box
     rain_intensity = np.array(image) / 100.0
     max_intensity = rain_intensity.max()
     print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
+    # Calculate maximum rain intensity inside circles of different radii
     for radius_km in [50, 30, 10, 3, 1]:
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
