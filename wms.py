@@ -1,14 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import io
 import urllib.parse
 import urllib.request
 
 import PIL.Image
 
-import time_utils
 
-
-def fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length):
-    radar_time_string = time_utils.datetime_to_wms_string(latest_radar_time)
+def fetch_radar_image(radar_time_string, api_key, bounding_box, image_edge_length):
     print('Fetching radar image for {}'.format(radar_time_string))
     base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms?'
     wms_params = {

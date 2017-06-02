@@ -8,6 +8,7 @@ import numpy as np
 
 import time_utils
 import wms
+import wfs
 
 # Komakallio location in EPSG:3067 coordinates
 KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
@@ -39,9 +40,7 @@ def main():
     image_edge_length = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
     # Determine latest radar image time
-    latest_radar_time = time_utils.current_radar_time(offset=-5)
-    timestamp = int(1000 * time.mktime(latest_radar_time.timetuple()))
-    print('Timestamp: {}'.format(timestamp))
+    latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
 
     # Fetch radar image
     image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
