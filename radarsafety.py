@@ -2,11 +2,9 @@
 
 import configparser
 import os
-import time
 
 import numpy as np
 
-import time_utils
 import wms
 import wfs
 
