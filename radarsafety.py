@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import os
 import configparser
-import urllib.parse
-import urllib.request
+import os
 import time
-import io
 
-import PIL.Image
 import numpy as np
 
 import time_utils
-
+import wms
 
 # Komakallio location in EPSG:3067 coordinates
 KOMAKALLIO_EPSG3067 = (355121.064967, 6673513.77179)
@@ -48,7 +44,7 @@ def main():
     print('Timestamp: {}'.format(timestamp))
 
     # Fetch radar image
-    image = fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
+    image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
     image.save('latest_rain_intensity.png')
 
     # Calculate maximum rain intensities
@@ -60,36 +56,6 @@ def main():
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
         print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
-
-
-def fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length):
-    radar_time_string = time_utils.datetime_to_wms_string(latest_radar_time)
-    print('Fetching radar image for {}'.format(radar_time_string))
-    base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms?'
-    wms_params = {
-        'service': 'WMS',
-        'version': '1.3.0',
-        'request': 'GetMap',
-        'layers': 'suomi_rr_eureffin',
-        'crs': 'EPSG:3067',
-        'bbox': combine_tuple_to_string(bounding_box),
-        'styles': 'raster',
-        'width': image_edge_length,
-        'height': image_edge_length,
-        'format': 'image/png',
-        'time': radar_time_string
-    }
-    complete_url = base_url + urllib.parse.urlencode(wms_params)
-    with urllib.request.urlopen(complete_url) as response:
-        image = PIL.Image.open(io.BytesIO(response.read()))
-    return image
-
-
-def combine_tuple_to_string(tuple_object):
-    output_string = ''
-    for item in tuple_object:
-        output_string += str(item) + ','
-    return output_string[:-1]
 
 
 def circle_mask(center_x, center_y, radius, grid_edge_length):
