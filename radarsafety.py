@@ -74,7 +74,7 @@ def main():
     max_intensity = rain_intensity.max()
     print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
-    for radius_km in [50, 30, 10, 3]:
+    for radius_km in [50, 30, 10, 3, 1]:
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
         print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
