@@ -76,7 +76,7 @@ def main():
 
     for radius_km in [50, 30, 10, 3]:
         radius_m = 1000 * radius_km
-        max_intensity_inside_circle = get_max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
+        max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
         print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
 
 
@@ -87,14 +87,14 @@ def combine_tuple_to_string(tuple_object):
     return output_string[:-1]
 
 
-def get_circle_mask(center_x, center_y, radius, grid_edge_length):
+def circle_mask(center_x, center_y, radius, grid_edge_length):
     y, x = np.ogrid[-center_y:grid_edge_length - center_y, -center_x:grid_edge_length - center_x]
     mask = x * x + y * y <= radius * radius
     return mask
 
 
-def get_max_inside_circle(image, radius_meters, meters_per_pixel):
-    mask = get_circle_mask(image.shape[0] // 2, image.shape[1] // 2, radius_meters / meters_per_pixel, image.shape[0])
+def max_inside_circle(image, radius_meters, meters_per_pixel):
+    mask = circle_mask(image.shape[0] // 2, image.shape[1] // 2, radius_meters / meters_per_pixel, image.shape[0])
     max_intensity = image[mask].max()
     return max_intensity
 
