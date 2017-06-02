@@ -80,7 +80,7 @@ def main():
 
 
 def report_to_api(api_data, iso_time_string):
-    timestamp = iso_string_to_timestamp(iso_time_string)
+    timestamp = 1000 * iso_string_to_unix_timestamp(iso_time_string)
     json_data = {
         'Type': 'Radar',
         'Timestamp': timestamp,
@@ -93,8 +93,8 @@ def report_to_api(api_data, iso_time_string):
         raise ConnectionError('Could not establish connection to Komakallio API!')
 
 
-def iso_string_to_timestamp(iso_string):
-    timestamp = 1000 * calendar.timegm(time.strptime(iso_string, '%Y-%m-%dT%H:%M:%SZ'))
+def iso_string_to_unix_timestamp(iso_string):
+    timestamp = calendar.timegm(time.strptime(iso_string, '%Y-%m-%dT%H:%M:%SZ'))
     return timestamp
 
 
