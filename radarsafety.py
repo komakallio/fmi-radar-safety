@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import configparser
 import os
+import configparser
 import urllib.parse
 import urllib.request
-import time_utils
 import time
 import io
+
 import PIL.Image
 import numpy as np
+
+import time_utils
 
 
 # Komakallio location in EPSG:3067 coordinates
@@ -31,6 +33,12 @@ def combine_tuple_to_string(tuple_object):
     for item in tuple_object:
         output_string += str(item) + ','
     return output_string[:-1]
+
+
+def get_circle_mask(center_x, center_y, radius, grid_edge_length):
+    y, x = np.ogrid[-center_y:grid_edge_length - center_y, -center_x:grid_edge_length - center_x]
+    mask = x * x + y * y <= radius * radius
+    return mask
 
 
 def main():
