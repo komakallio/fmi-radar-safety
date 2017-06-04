@@ -23,11 +23,14 @@ BOUNDING_BOX_SIZE = 300000.0
 
 def main():
     # Try to read API key from config file
-    if not os.path.isfile('config.ini'):
-        print('config.ini not found!')
+    config_filename = 'config.ini'
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    config_path = os.path.join(base_dir, config_filename)
+    if not os.path.isfile(config_path):
+        print('Config file not found!')
         return
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(config_path)
     try:
         api_key = config['API']['api_key']
     except KeyError:
