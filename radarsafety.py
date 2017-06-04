@@ -4,8 +4,9 @@ import configparser
 import os
 import time
 import calendar
-import requests
+import logging
 
+import requests
 import numpy as np
 
 import wms
@@ -22,19 +23,20 @@ BOUNDING_BOX_SIZE = 300000.0
 
 
 def main():
+    logger = logging.getLogger(__name__)
     # Try to read API key from config file
     config_filename = 'config.ini'
     base_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(base_dir, config_filename)
     if not os.path.isfile(config_path):
-        print('Config file not found!')
+        logger.error('Config file not found!')
         return
     config = configparser.ConfigParser()
     config.read(config_path)
     try:
         api_key = config['API']['api_key']
     except KeyError:
-        print('API key not found in config!')
+        logger.error('API key not found in config!')
         return
 
     # Bounding box corner coordinates in EPSG:3067
@@ -48,15 +50,16 @@ def main():
     try:
         latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
     except IndexError:
-        print('Radar observation time information not available!')
+        logger.error('Radar observation time not available!')
         return
 
     # Fetch radar image
+    logger.debug('Fetching radar image for {}'.format(latest_radar_time))
     image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
 
     # Check if image returned by server is valid
     if image.mode is not 'I':
-        print('Image not available!')
+        logger.error('Image not available!')
         return
 
     image.save('latest_rain_intensity.png')
@@ -64,21 +67,21 @@ def main():
     # Calculate maximum rain inside bounding box
     rain_intensity = np.array(image) / 100.0
     max_intensity = rain_intensity.max()
-    print('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
+    logger.debug('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
     # Calculate maximum rain intensity inside circles of different radii
     api_data = {}
     for radius_km in [50, 30, 10, 3, 1]:
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
-        print('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+        logger.debug('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
         api_data['{}km'.format(radius_km)] = max_intensity_inside_circle
 
     # Report data to Komakallio API
     try:
         report_to_api(api_data, latest_radar_time)
     except ConnectionError as e:
-        print(e)
+        logger.error(e)
         return
 
 
@@ -91,9 +94,10 @@ def report_to_api(api_data, iso_time_string):
     }
     try:
         report_response = requests.post('http://localhost:9001/api', json=json_data)
-        print('Komakallio API responded with status {}'.format(report_response.status_code))
     except requests.exceptions.ConnectionError:
         raise ConnectionError('Could not establish connection to Komakallio API!')
+    if report_response.status_code != 200:
+        raise ConnectionError('Komakallio API returned status code {}'.format(report_response.status_code))
 
 
 def iso_string_to_unix_timestamp(iso_string):

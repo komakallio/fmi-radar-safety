@@ -8,7 +8,6 @@ import PIL.Image
 
 
 def fetch_radar_image(radar_time_string, api_key, bounding_box, image_edge_length):
-    print('Fetching radar image for {}'.format(radar_time_string))
     base_url = 'http://wms.fmi.fi/fmi-apikey/' + api_key + '/geoserver/Radar/wms?'
     wms_params = {
         'service': 'WMS',
