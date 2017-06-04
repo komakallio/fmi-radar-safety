@@ -23,7 +23,11 @@ BOUNDING_BOX_SIZE = 300000.0
 
 
 def main():
+    # Configure logger
+    logging.Formatter.converter = time.gmtime
+    logging.basicConfig(filename='radarsafety.log', format='%(asctime)s - %(name)s:%(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
+
     # Try to read API key from config file
     config_filename = 'config.ini'
     base_dir = os.path.dirname(os.path.realpath(__file__))
