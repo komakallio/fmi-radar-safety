@@ -66,7 +66,7 @@ def main():
         logger.error('Image not available!')
         return
 
-    image.save('latest_rain_intensity.png')
+    image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
 
     # Calculate maximum rain inside bounding box
     rain_intensity = np.array(image) / 100.0
