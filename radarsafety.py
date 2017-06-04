@@ -23,14 +23,15 @@ BOUNDING_BOX_SIZE = 300000.0
 
 
 def main():
+    base_dir = os.path.dirname(os.path.realpath(__file__))
     # Configure logger
+    log_file = os.path.join(base_dir, 'radarsafety.log')
     logging.Formatter.converter = time.gmtime
-    logging.basicConfig(filename='radarsafety.log', format='%(asctime)s - %(name)s:%(levelname)s - %(message)s')
+    logging.basicConfig(filename=log_file, format='%(asctime)s - %(name)s:%(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
 
     # Try to read API key from config file
     config_filename = 'config.ini'
-    base_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(base_dir, config_filename)
     if not os.path.isfile(config_path):
         logger.error('Config file not found!')
