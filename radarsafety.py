@@ -80,8 +80,9 @@ def main():
         radius_m = 1000 * radius_km
         max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
         logger.debug('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
-        api_data['{}km'.format(radius_km)] = max_intensity_inside_circle
+        api_data['{}km'.format(radius_km)] = [max_intensity_inside_circle, 'mm/h']
 
+    logger.debug('Sending: {}'.format(api_data))
     # Report data to Komakallio API
     try:
         report_to_api(api_data, latest_radar_time)
