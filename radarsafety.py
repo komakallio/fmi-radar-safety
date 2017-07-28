@@ -8,6 +8,7 @@ import logging
 
 import requests
 import numpy as np
+import scipy.spatial
 
 import wms
 import wfs
@@ -82,6 +83,15 @@ def main():
         logger.debug('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
         api_data['{}km'.format(radius_km)] = [max_intensity_inside_circle, 'mm/h']
 
+    rain_distance = closest_rain(rain_intensity, rain_intensity.shape[1] // 2, rain_intensity.shape[0] // 2, METERS_PER_PIXEL)
+    if rain_distance is None:
+        logger.debug('No rain in sight.')
+        api_data['rain_distance'] = ['-', 'km']
+    else:
+        rain_distance_rounded = round(rain_distance, 2)
+        logger.debug('Distance to rain: {} km'.format(rain_distance_rounded))
+        api_data['rain_distance'] = [rain_distance_rounded, 'km']
+
     logger.debug('Sending: {}'.format(api_data))
     # Report data to Komakallio API
     try:
@@ -118,9 +128,19 @@ def circle_mask(center_x, center_y, radius, grid_edge_length):
 
 
 def max_inside_circle(image, radius_meters, meters_per_pixel):
-    mask = circle_mask(image.shape[0] // 2, image.shape[1] // 2, radius_meters / meters_per_pixel, image.shape[0])
+    mask = circle_mask(image.shape[1] // 2, image.shape[0] // 2, radius_meters / meters_per_pixel, image.shape[0])
     max_intensity = image[mask].max()
     return max_intensity
+
+
+def closest_rain(image, center_x, center_y, meters_per_pixel):
+    rain_pixels = np.vstack(np.where(image > 0)).T
+    if rain_pixels.size == 0:
+        return None
+    kdtree = scipy.spatial.KDTree(rain_pixels)
+    closest_distances_pixels, index = kdtree.query((center_y, center_x))
+    closest_distances_km = meters_per_pixel * closest_distances_pixels / 1000.0
+    return closest_distances_km
 
 
 if __name__ == '__main__':
