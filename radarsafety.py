@@ -134,7 +134,8 @@ def max_inside_circle(image, radius_meters, meters_per_pixel):
 
 
 def closest_rain(image, center_x, center_y, meters_per_pixel):
-    rain_pixels = np.vstack(np.where(image > 0)).T
+    threshold = 0.03
+    rain_pixels = np.vstack(np.where(image > threshold)).T
     if rain_pixels.size == 0:
         return None
     kdtree = scipy.spatial.KDTree(rain_pixels)
