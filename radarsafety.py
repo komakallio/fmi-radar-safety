@@ -86,7 +86,7 @@ def main():
     rain_distance = closest_rain(rain_intensity, rain_intensity.shape[1] // 2, rain_intensity.shape[0] // 2, METERS_PER_PIXEL)
     if rain_distance is None:
         logger.debug('No rain in sight.')
-        api_data['rain_distance'] = ['-', 'km']
+        api_data['rain_distance'] = [None, 'km']
     else:
         rain_distance_rounded = round(rain_distance, 2)
         logger.debug('Distance to rain: {} km'.format(rain_distance_rounded))
