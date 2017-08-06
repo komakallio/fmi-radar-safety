@@ -106,7 +106,7 @@ def report_to_api(api_data, iso_time_string):
     json_data = {
         'Type': 'Radar',
         'Timestamp': timestamp,
-        'Data': api_data
+        'Radar': api_data
     }
     try:
         report_response = requests.post('http://localhost:9001/api', json=json_data)
