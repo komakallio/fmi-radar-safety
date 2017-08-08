@@ -134,7 +134,7 @@ def max_inside_circle(image, radius_meters, meters_per_pixel):
 
 
 def closest_rain(image, center_x, center_y, meters_per_pixel):
-    threshold = 0.05
+    threshold = 0.08
     rain_pixels = np.vstack(np.where(image > threshold)).T
     if rain_pixels.size == 0:
         return None
