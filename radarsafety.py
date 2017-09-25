@@ -52,53 +52,56 @@ def main():
     # Image edge length in pixels
     image_edge_length = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
-    # Determine latest radar image time
-    try:
-        latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
-    except IndexError:
-        logger.error('Radar observation time not available!')
-        return
+    while True:
+        # Determine latest radar image time
+        try:
+            latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
+        except IndexError:
+            logger.error('Radar observation time not available!')
+            time.sleep(int(config['General']['PollingIntervalSeconds']))
+            continue
 
-    # Fetch radar image
-    logger.debug('Fetching radar image for {}'.format(latest_radar_time))
-    image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
+        # Fetch radar image
+        logger.debug('Fetching radar image for {}'.format(latest_radar_time))
+        image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
 
-    # Check if image returned by server is valid
-    if image.mode is not 'I':
-        logger.error('Image not available!')
-        return
+        # Check if image returned by server is valid
+        if image.mode is not 'I':
+            logger.error('Image not available!')
+            time.sleep(int(config['General']['PollingIntervalSeconds']))
+            continue
 
-    image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
+        image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
 
-    # Calculate maximum rain inside bounding box
-    rain_intensity = np.array(image) / 100.0
-    max_intensity = rain_intensity.max()
-    logger.debug('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
+        # Calculate maximum rain inside bounding box
+        rain_intensity = np.array(image) / 100.0
+        max_intensity = rain_intensity.max()
+        logger.debug('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
-    # Calculate maximum rain intensity inside circles of different radii
-    api_data = {}
-    for radius_km in [50, 30, 10, 3, 1]:
-        radius_m = 1000 * radius_km
-        max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
-        logger.debug('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
-        api_data['{}km'.format(radius_km)] = [max_intensity_inside_circle, 'mm/h']
+        # Calculate maximum rain intensity inside circles of different radii
+        api_data = {}
+        for radius_km in [50, 30, 10, 3, 1]:
+            radius_m = 1000 * radius_km
+            max_intensity_inside_circle = max_inside_circle(rain_intensity, radius_m, METERS_PER_PIXEL)
+            logger.debug('Maximum rain intensity inside {} km: {} mm/h'.format(radius_km, max_intensity_inside_circle))
+            api_data['{}km'.format(radius_km)] = [max_intensity_inside_circle, 'mm/h']
 
-    rain_distance = closest_rain(rain_intensity, rain_intensity.shape[1] // 2, rain_intensity.shape[0] // 2, METERS_PER_PIXEL)
-    if rain_distance is None:
-        logger.debug('No rain in sight.')
-        api_data['rain_distance'] = [None, 'km']
-    else:
-        rain_distance_rounded = round(rain_distance, 2)
-        logger.debug('Distance to rain: {} km'.format(rain_distance_rounded))
-        api_data['rain_distance'] = [rain_distance_rounded, 'km']
+        rain_distance = closest_rain(rain_intensity, rain_intensity.shape[1] // 2, rain_intensity.shape[0] // 2, METERS_PER_PIXEL)
+        if rain_distance is None:
+            logger.debug('No rain in sight.')
+            api_data['rain_distance'] = [None, 'km']
+        else:
+            rain_distance_rounded = round(rain_distance, 2)
+            logger.debug('Distance to rain: {} km'.format(rain_distance_rounded))
+            api_data['rain_distance'] = [rain_distance_rounded, 'km']
 
-    logger.debug('Sending: {}'.format(api_data))
-    # Report data to Komakallio API
-    try:
-        report_to_api(api_data, latest_radar_time)
-    except ConnectionError as e:
-        logger.error(e)
-        return
+        logger.debug('Sending: {}'.format(api_data))
+        # Report data to Komakallio API
+        try:
+            report_to_api(api_data, latest_radar_time)
+        except ConnectionError as e:
+            logger.error(e)
+        time.sleep(int(config['General']['PollingIntervalSeconds']))
 
 
 def report_to_api(api_data, iso_time_string):
