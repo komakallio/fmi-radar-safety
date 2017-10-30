@@ -94,8 +94,6 @@ def main():
             time.sleep(60)
             continue
 
-        image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
-
         # Calculate maximum rain inside bounding box
         rain_intensity = process_data(np.array(image) / 100.0)
         max_intensity = rain_intensity.max()
