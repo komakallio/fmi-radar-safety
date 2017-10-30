@@ -9,6 +9,7 @@ import logging
 import requests
 import numpy as np
 import scipy.spatial
+import scipy.ndimage.filters
 
 import wms
 import wfs
@@ -21,6 +22,21 @@ METERS_PER_PIXEL = 1000.0
 
 # Bounding box edge length in meters
 BOUNDING_BOX_SIZE = 300000.0
+
+
+def process_data(rain_intensity_image):
+    image = rain_intensity_image.copy()
+
+    # Remove spurious "hot pixels"
+    median_filtered = scipy.ndimage.filters.median_filter(image, size=3)
+    difference = image - median_filtered
+    stddev = difference.std()
+    hot_pixels = difference > 5 * stddev
+    image[hot_pixels] = median_filtered[hot_pixels]
+
+    # Threshold data at 0.2 mm / h
+    image[image < 0.2] = 0.0
+    return image
 
 
 def main():
@@ -81,7 +97,7 @@ def main():
         image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
 
         # Calculate maximum rain inside bounding box
-        rain_intensity = np.array(image) / 100.0
+        rain_intensity = process_data(np.array(image) / 100.0)
         max_intensity = rain_intensity.max()
         logger.debug('Maximum rain intensity in bounding box: {} mm/h'.format(max_intensity))
 
@@ -144,8 +160,7 @@ def max_inside_circle(image, radius_meters, meters_per_pixel):
 
 
 def closest_rain(image, center_x, center_y, meters_per_pixel):
-    threshold = 0.08
-    rain_pixels = np.vstack(np.where(image > threshold)).T
+    rain_pixels = np.vstack(np.where(image > 0)).T
     if rain_pixels.size == 0:
         return None
     kdtree = scipy.spatial.KDTree(rain_pixels)
