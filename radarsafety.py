@@ -52,13 +52,20 @@ def main():
     # Image edge length in pixels
     image_edge_length = int(BOUNDING_BOX_SIZE / METERS_PER_PIXEL)
 
+    latest_radar_time = None
+
     while True:
         # Determine latest radar image time
         try:
-            latest_radar_time = wfs.find_radar_observation_times(api_key)[-1]
+            radar_time = wfs.find_radar_observation_times(api_key)[-1]
+            if radar_time == latest_radar_time:
+                logger.warning('New radar image not available yet!')
+                time.sleep(60)
+                continue
+            latest_radar_time = radar_time
         except IndexError:
             logger.error('Radar observation time not available!')
-            time.sleep(int(config['General']['PollingIntervalSeconds']))
+            time.sleep(60)
             continue
 
         # Fetch radar image
@@ -68,7 +75,7 @@ def main():
         # Check if image returned by server is valid
         if image.mode is not 'I':
             logger.error('Image not available!')
-            time.sleep(int(config['General']['PollingIntervalSeconds']))
+            time.sleep(60)
             continue
 
         image.save(os.path.join(base_dir, 'latest_rain_intensity.png'))
