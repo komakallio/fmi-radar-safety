@@ -47,20 +47,6 @@ def main():
     logging.basicConfig(filename=log_file, format='%(asctime)s - %(name)s:%(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
 
-    # Try to read API key from config file
-    config_filename = 'config.ini'
-    config_path = os.path.join(base_dir, config_filename)
-    if not os.path.isfile(config_path):
-        logger.error('Config file not found!')
-        return
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    try:
-        api_key = config['API']['api_key']
-    except KeyError:
-        logger.error('API key not found in config!')
-        return
-
     # Bounding box corner coordinates in EPSG:3067
     bounding_box = (KOMAKALLIO_EPSG3067[0] - BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] - BOUNDING_BOX_SIZE / 2,
                     KOMAKALLIO_EPSG3067[0] + BOUNDING_BOX_SIZE / 2, KOMAKALLIO_EPSG3067[1] + BOUNDING_BOX_SIZE / 2)
@@ -73,7 +59,7 @@ def main():
     while True:
         # Determine latest radar image time
         try:
-            radar_time = wfs.find_radar_observation_times(api_key)[-1]
+            radar_time = wfs.find_radar_observation_times()[-1]
             if radar_time == latest_radar_time:
                 logger.warning('New radar image not available yet!')
                 time.sleep(60)
@@ -86,7 +72,7 @@ def main():
 
         # Fetch radar image
         logger.debug('Fetching radar image for {}'.format(latest_radar_time))
-        image = wms.fetch_radar_image(latest_radar_time, api_key, bounding_box, image_edge_length)
+        image = wms.fetch_radar_image(latest_radar_time, bounding_box, image_edge_length)
 
         # Check if image returned by server is valid
         if image.mode is not 'I':
@@ -122,7 +108,7 @@ def main():
             report_to_api(api_data, latest_radar_time)
         except ConnectionError as e:
             logger.error(e)
-        time.sleep(int(config['General']['PollingIntervalSeconds']))
+        time.sleep(300)
 
 
 def report_to_api(api_data, iso_time_string):
@@ -162,7 +148,7 @@ def closest_rain(image, center_x, center_y, meters_per_pixel):
     if rain_pixels.size == 0:
         return None
     kdtree = scipy.spatial.KDTree(rain_pixels)
-    closest_distances_pixels, index = kdtree.query((center_y, center_x))
+    closest_distances_pixels, _ = kdtree.query((center_y, center_x))
     closest_distances_km = meters_per_pixel * closest_distances_pixels / 1000.0
     return closest_distances_km
 

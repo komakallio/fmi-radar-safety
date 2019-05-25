@@ -5,8 +5,8 @@ import urllib.parse
 import urllib.request
 
 
-def find_radar_observation_times(api_key):
-    base_url = 'http://data.fmi.fi/fmi-apikey/' + api_key + '/wfs?'
+def find_radar_observation_times():
+    base_url = 'http://opendata.fmi.fi/wfs?'
     wfs_params = {
         'request': 'GetFeature',
         'storedquery_id': 'fmi::radar::composite::rr'

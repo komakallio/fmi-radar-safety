@@ -125,3 +125,5 @@ config.ini
 
 # Radar output image files
 *.png
+
+.vscode/*
