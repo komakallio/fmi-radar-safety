@@ -23,7 +23,7 @@ def fetch_radar_image(radar_time_string, bounding_box, image_edge_length):
         'time': radar_time_string
     }
     complete_url = base_url + urllib.parse.urlencode(wms_params)
-    with urllib.request.urlopen(complete_url) as response:
+    with urllib.request.urlopen(complete_url, timeout=15) as response:
         image = PIL.Image.open(io.BytesIO(response.read()))
     return image
 

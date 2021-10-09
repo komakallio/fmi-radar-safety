@@ -13,7 +13,7 @@ def find_radar_observation_times():
     }
     complete_url = base_url + urllib.parse.urlencode(wfs_params)
 
-    with urllib.request.urlopen(complete_url) as response:
+    with urllib.request.urlopen(complete_url, timeout=15) as response:
         root = ElementTree.fromstring(response.read())
 
     namespaces = {
